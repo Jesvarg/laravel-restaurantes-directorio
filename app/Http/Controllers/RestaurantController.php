@@ -1,15 +1,14 @@
 <?php
 
-namespace App\Http\Controllers\Api;
+namespace App\Http\Controllers;
 
-use App\Http\Controllers\Controller;
 use App\Models\Restaurant;
 use App\Models\Category;
 use App\Models\Photo;
+use App\Models\Favorite;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Requests\StoreRestaurantRequest;
 use App\Http\Requests\UpdateRestaurantRequest;
 
@@ -22,7 +21,16 @@ class RestaurantController extends Controller
     {
         // Usar with() para cargar relaciones y evitar consultas múltiples
         $restaurants = Restaurant::with('user', 'categories', 'photos')->get();
-        return response()->json($restaurants);
+        return view('restaurants.index', compact('restaurants'));
+    }
+
+    /**
+     * Mostrar el formulario para crear un nuevo restaurante.
+     */
+    public function create()
+    {
+        $categories = Category::all();
+        return view('restaurants.create', compact('categories'));
     }
 
     /**
@@ -58,22 +66,13 @@ class RestaurantController extends Controller
             
             DB::commit();
             
-            // Cargar relaciones para la respuesta
-            $restaurant->load('categories', 'photos');
-            
-            // Devolver respuesta JSON con código 201 (created)
-            return response()->json([
-                'success' => true,
-                'data' => $restaurant
-            ], 201);
+            return redirect()->route('restaurants.show', $restaurant->id)
+                ->with('success', 'Restaurante creado correctamente');
         } catch (\Exception $e) {
             DB::rollBack();
-            //  Manejo de errores
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al crear el restaurante.',
-                'error' => $e->getMessage()
-            ], 500);
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Error al crear el restaurante: ' . $e->getMessage());
         }
     }
 
@@ -85,10 +84,28 @@ class RestaurantController extends Controller
         $restaurant = Restaurant::with(['reviews.user', 'photos', 'categories', 'user'])->find($id);
 
         if (!$restaurant) {
-            return response()->json(['message' => 'Restaurante no encontrado'], 404);
+            return redirect()->route('restaurants.index')
+                ->with('error', 'Restaurante no encontrado');
         }
 
-        return response()->json($restaurant);
+        return view('restaurants.show', compact('restaurant'));
+    }
+
+    /**
+     * Mostrar el formulario para editar un restaurante.
+     */
+    public function edit($id)
+    {
+        $restaurant = Restaurant::with('categories', 'photos')->find($id);
+        
+        if (!$restaurant) {
+            return redirect()->route('restaurants.index')
+                ->with('error', 'Restaurante no encontrado');
+        }
+        
+        $categories = Category::all();
+        
+        return view('restaurants.edit', compact('restaurant', 'categories'));
     }
 
     /**
@@ -99,7 +116,8 @@ class RestaurantController extends Controller
         $restaurant = Restaurant::find($id);
 
         if (!$restaurant) {
-            return response()->json(['message' => 'Restaurante no encontrado'], 404);
+            return redirect()->route('restaurants.index')
+                ->with('error', 'Restaurante no encontrado');
         }
 
         DB::beginTransaction();
@@ -135,20 +153,13 @@ class RestaurantController extends Controller
             
             DB::commit();
             
-            // Cargar relaciones para la respuesta
-            $restaurant->load('categories', 'photos');
-            
-            return response()->json([
-                'success' => true,
-                'data' => $restaurant
-            ]);
+            return redirect()->route('restaurants.show', $restaurant->id)
+                ->with('success', 'Restaurante actualizado correctamente');
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al actualizar.',
-                'error' => $e->getMessage()
-            ], 500);
+            return redirect()->back()
+                ->withInput()
+                ->with('error', 'Error al actualizar el restaurante: ' . $e->getMessage());
         }
     }
 
@@ -160,7 +171,8 @@ class RestaurantController extends Controller
         $restaurant = Restaurant::find($id);
 
         if (!$restaurant) {
-            return response()->json(['message' => 'Restaurante no encontrado'], 404);
+            return redirect()->route('restaurants.index')
+                ->with('error', 'Restaurante no encontrado');
         }
 
         DB::beginTransaction();
@@ -175,110 +187,72 @@ class RestaurantController extends Controller
             $restaurant->delete();
             
             DB::commit();
-            return response()->json(['message' => 'Restaurante eliminado']);
+            return redirect()->route('restaurants.index')
+                ->with('success', 'Restaurante eliminado correctamente');
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json([
-                'success' => false,
-                'message' => 'No se pudo eliminar.',
-                'error' => $e->getMessage()
-            ], 500);
+            return redirect()->back()
+                ->with('error', 'Error al eliminar el restaurante: ' . $e->getMessage());
         }
     }
     
     /**
-     * Obtener los restaurantes favoritos de un usuario.
+     * Mostrar los restaurantes favoritos del usuario autenticado.
      */
-    public function getUserFavorites($userId)
+    public function favorites()
     {
-        $user = \App\Models\User::find($userId);
-        
-        if (!$user) {
-            return response()->json(['message' => 'Usuario no encontrado'], 404);
-        }
-        
+        $user = Auth::user();
         $favorites = $user->favorites()->with('categories', 'photos')->get();
         
-        return response()->json([
-            'success' => true,
-            'data' => $favorites
-        ]);
+        return view('restaurants.favorites', compact('favorites'));
     }
     
     /**
      * Añadir un restaurante a favoritos.
      */
-    public function addToFavorites(Request $request)
+    public function addToFavorites($id)
     {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'restaurant_id' => 'required|exists:restaurants,id'
+        $restaurant = Restaurant::find($id);
+        
+        if (!$restaurant) {
+            return redirect()->back()->with('error', 'Restaurante no encontrado');
+        }
+        
+        $user = Auth::user();
+        
+        // Verificar si ya está en favoritos
+        $exists = Favorite::where('user_id', $user->id)
+            ->where('restaurant_id', $id)
+            ->exists();
+            
+        if ($exists) {
+            return redirect()->back()->with('info', 'El restaurante ya está en favoritos');
+        }
+        
+        // Añadir a favoritos
+        Favorite::create([
+            'user_id' => $user->id,
+            'restaurant_id' => $id
         ]);
         
-        try {
-            // Verificar si ya está en favoritos
-            $exists = \App\Models\Favorite::where('user_id', $request->user_id)
-                ->where('restaurant_id', $request->restaurant_id)
-                ->exists();
-                
-            if ($exists) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'El restaurante ya está en favoritos'
-                ], 422);
-            }
-            
-            // Añadir a favoritos
-            \App\Models\Favorite::create([
-                'user_id' => $request->user_id,
-                'restaurant_id' => $request->restaurant_id
-            ]);
-            
-            return response()->json([
-                'success' => true,
-                'message' => 'Restaurante añadido a favoritos'
-            ], 201);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al añadir a favoritos',
-                'error' => $e->getMessage()
-            ], 500);
-        }
+        return redirect()->back()->with('success', 'Restaurante añadido a favoritos');
     }
     
     /**
      * Eliminar un restaurante de favoritos.
      */
-    public function removeFromFavorites(Request $request)
+    public function removeFromFavorites($id)
     {
-        $request->validate([
-            'user_id' => 'required|exists:users,id',
-            'restaurant_id' => 'required|exists:restaurants,id'
-        ]);
+        $user = Auth::user();
         
-        try {
-            $deleted = \App\Models\Favorite::where('user_id', $request->user_id)
-                ->where('restaurant_id', $request->restaurant_id)
-                ->delete();
-                
-            if (!$deleted) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'El restaurante no estaba en favoritos'
-                ], 404);
-            }
+        $deleted = Favorite::where('user_id', $user->id)
+            ->where('restaurant_id', $id)
+            ->delete();
             
-            return response()->json([
-                'success' => true,
-                'message' => 'Restaurante eliminado de favoritos'
-            ]);
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al eliminar de favoritos',
-                'error' => $e->getMessage()
-            ], 500);
+        if (!$deleted) {
+            return redirect()->back()->with('error', 'El restaurante no estaba en favoritos');
         }
+        
+        return redirect()->back()->with('success', 'Restaurante eliminado de favoritos');
     }
 }

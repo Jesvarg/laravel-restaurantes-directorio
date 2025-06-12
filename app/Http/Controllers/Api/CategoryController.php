@@ -13,7 +13,7 @@ class CategoryController extends Controller
 {
     public function index()
     {
-        $categories = Category::all();
+        $categories = Category::withCount('restaurants')->get();
         return response()->json($categories);
     }
 
@@ -64,6 +64,14 @@ class CategoryController extends Controller
         }
 
         try {
+            // Verificar si hay restaurantes asociados
+            $restaurantsCount = $category->restaurants()->count();
+            
+            if ($restaurantsCount > 0) {
+                // Desasociar los restaurantes en lugar de impedir la eliminación
+                $category->restaurants()->detach();
+            }
+            
             $category->delete();
             return response()->json(['message' => 'Categoría eliminada']);
         } catch (\Exception $e) {

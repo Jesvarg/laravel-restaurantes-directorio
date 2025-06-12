@@ -19,9 +19,13 @@ class ReviewController extends Controller
 
     public function store(StoreReviewRequest $request)
     {
-
         try {
+            // Crear la reseña
             $review = Review::create($request->validated());
+            
+            // Cargar las relaciones para la respuesta
+            $review->load('user', 'restaurant');
+            
             return response()->json(['success' => true, 'data' => $review], 201);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
@@ -49,6 +53,10 @@ class ReviewController extends Controller
 
         try {
             $review->update($request->validated());
+            
+            // Cargar las relaciones para la respuesta
+            $review->load('user', 'restaurant');
+            
             return response()->json(['success' => true, 'data' => $review]);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);

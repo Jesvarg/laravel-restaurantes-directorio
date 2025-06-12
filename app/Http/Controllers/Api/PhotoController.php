@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 use App\Models\Photo;
 use Illuminate\Validation\ValidationException;
 
-class PhotoController extends controller
+class PhotoController extends Controller
 {
     public function index()
     {
@@ -20,7 +20,25 @@ class PhotoController extends controller
     public function store(StorePhotoRequest $request)
     {
         try {
-            $photo = Photo::create($request->validated());
+            // Si se envía un archivo
+            if ($request->hasFile('photo')) {
+                $file = $request->file('photo');
+                $path = $file->store('photos', 'public');
+                $url = asset('storage/' . $path);
+                
+                // Crear la foto con la URL generada
+                $data = $request->validated();
+                $data['url'] = $url;
+                
+                $photo = Photo::create($data);
+            } else {
+                // Si solo se envía una URL
+                $photo = Photo::create($request->validated());
+            }
+            
+            // Cargar la relación polimórfica
+            $photo->load('imageable');
+            
             return response()->json(['success' => true, 'data' => $photo], 201);
         } catch (\Exception $e) {
             return response()->json(['success' => false, 'error' => $e->getMessage()], 500);
@@ -29,7 +47,7 @@ class PhotoController extends controller
 
     public function show($id)
     {
-        $photo = Photo::find($id);
+        $photo = Photo::with('imageable')->find($id);
 
         if (!$photo) {
             return response()->json(['message' => 'Foto no encontrada'], 404);

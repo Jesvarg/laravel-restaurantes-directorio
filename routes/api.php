@@ -49,6 +49,11 @@ Route::middleware('auth:api')->group(function () {
     Route::post('restaurants', [RestaurantController::class, 'store']);
     Route::put('restaurants/{id}', [RestaurantController::class, 'update']);
     Route::delete('restaurants/{id}', [RestaurantController::class, 'destroy']);
+    
+    // Rutas para favoritos
+    Route::get('users/{userId}/favorites', [RestaurantController::class, 'getUserFavorites']);
+    Route::post('favorites', [RestaurantController::class, 'addToFavorites']);
+    Route::delete('favorites', [RestaurantController::class, 'removeFromFavorites']);
 
     // CRUD completo de Categorías
     Route::post('categories', [CategoryController::class, 'store']);
