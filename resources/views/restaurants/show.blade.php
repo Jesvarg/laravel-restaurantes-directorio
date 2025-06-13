@@ -89,7 +89,7 @@
                             </form>
                         @endif
                         
-                        <a href="{{ route('reviews.create') }}?restaurant_id={{ $restaurant->id }}" class="btn btn-primary">
+                        <a href="{{ route('reviews.create', $restaurant) }}" class="btn btn-primary">
                             <i class="bi bi-star"></i> Escribir reseña
                         </a>
                     @endauth
@@ -117,7 +117,7 @@
                 <div class="d-flex justify-content-between align-items-center mb-3">
                     <h4 class="card-title mb-0">Reseñas</h4>
                     @auth
-                        <a href="{{ route('reviews.create') }}?restaurant_id={{ $restaurant->id }}" class="btn btn-sm btn-primary">
+                        <a href="{{ route('reviews.create', $restaurant) }}" class="btn btn-sm btn-primary">
                             <i class="bi bi-plus-circle"></i> Añadir reseña
                         </a>
                     @endauth
@@ -142,20 +142,22 @@
                                 <div class="d-flex justify-content-between align-items-center">
                                     <small class="text-muted">Por: {{ $review->user->name }}</small>
                                     
-                                    @if(Auth::id() == $review->user_id)
-                                        <div>
-                                            <a href="{{ route('reviews.edit', $review) }}" class="btn btn-sm btn-warning">
+                                    <div class="review-actions">
+                                        @can('update', $review)
+                                            <a href="{{ route('reviews.edit', $review) }}" class="btn btn-sm btn-warning" title="Editar reseña">
                                                 <i class="bi bi-pencil"></i>
                                             </a>
+                                        @endcan
+                                        @can('delete', $review)
                                             <form action="{{ route('reviews.destroy', $review) }}" method="POST" class="d-inline delete-review-form">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-danger">
+                                                <button type="submit" class="btn btn-sm btn-danger" title="Eliminar reseña">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             </form>
-                                        </div>
-                                    @endif
+                                        @endcan
+                                    </div>
                                 </div>
                             </div>
                         @endforeach

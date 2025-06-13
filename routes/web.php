@@ -22,10 +22,10 @@ Route::post('logout', [AuthController::class, 'logout'])->name('logout');
 
 // Rutas públicas
 Route::get('restaurants', [RestaurantController::class, 'index'])->name('restaurants.index');
-Route::get('restaurants/{id}', [RestaurantController::class, 'show'])->name('restaurants.show');
+Route::get('restaurants/{restaurant}', [RestaurantController::class, 'show'])->name('restaurants.show');
 
 Route::get('categories', [CategoryController::class, 'index'])->name('categories.index');
-Route::get('categories/{id}', [CategoryController::class, 'show'])->name('categories.show');
+Route::get('categories/{category}', [CategoryController::class, 'show'])->name('categories.show');
 Route::get('categories/{id}/restaurants', [CategoryController::class, 'restaurants'])->name('categories.restaurants');
 
 // Rutas protegidas (requieren autenticación)
@@ -33,31 +33,45 @@ Route::middleware('auth')->group(function () {
     // Restaurantes
     Route::get('restaurants/create', [RestaurantController::class, 'create'])->name('restaurants.create');
     Route::post('restaurants', [RestaurantController::class, 'store'])->name('restaurants.store');
-    Route::get('restaurants/{id}/edit', [RestaurantController::class, 'edit'])->name('restaurants.edit');
-    Route::put('restaurants/{id}', [RestaurantController::class, 'update'])->name('restaurants.update');
-    Route::delete('restaurants/{id}', [RestaurantController::class, 'destroy'])->name('restaurants.destroy');
+    Route::get('restaurants/{restaurant}/edit', [RestaurantController::class, 'edit'])->name('restaurants.edit');
+    Route::put('restaurants/{restaurant}', [RestaurantController::class, 'update'])->name('restaurants.update');
+    Route::delete('restaurants/{restaurant}', [RestaurantController::class, 'destroy'])->name('restaurants.destroy');
     
     // Favoritos
     Route::get('favorites', [RestaurantController::class, 'favorites'])->name('restaurants.favorites');
-    Route::post('restaurants/{id}/favorite', [RestaurantController::class, 'addToFavorites'])->name('restaurants.favorite');
-    Route::delete('restaurants/{id}/favorite', [RestaurantController::class, 'removeFromFavorites'])->name('restaurants.unfavorite');
+    Route::post('restaurants/{restaurant}/favorite', [RestaurantController::class, 'addToFavorites'])->name('restaurants.favorite');
+    Route::delete('restaurants/{restaurant}/favorite', [RestaurantController::class, 'removeFromFavorites'])->name('restaurants.unfavorite');
     
     // Categorías (solo para administradores)
     Route::middleware('admin')->group(function () {
         Route::get('categories/create', [CategoryController::class, 'create'])->name('categories.create');
         Route::post('categories', [CategoryController::class, 'store'])->name('categories.store');
-        Route::get('categories/{id}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
-        Route::put('categories/{id}', [CategoryController::class, 'update'])->name('categories.update');
-        Route::delete('categories/{id}', [CategoryController::class, 'destroy'])->name('categories.destroy');
+        Route::get('categories/{category}/edit', [CategoryController::class, 'edit'])->name('categories.edit');
+        Route::put('categories/{category}', [CategoryController::class, 'update'])->name('categories.update');
+        Route::delete('categories/{category}', [CategoryController::class, 'destroy'])->name('categories.destroy');
     });
     
     // Reseñas
-    Route::get('reviews', [ReviewController::class, 'index'])->name('reviews.index');
-    Route::get('reviews/create', [ReviewController::class, 'create'])->name('reviews.create');
-    Route::post('reviews', [ReviewController::class, 'store'])->name('reviews.store');
-    Route::get('reviews/{id}', [ReviewController::class, 'show'])->name('reviews.show');
-    Route::get('reviews/{id}/edit', [ReviewController::class, 'edit'])->name('reviews.edit');
-    Route::put('reviews/{id}', [ReviewController::class, 'update'])->name('reviews.update');
-    Route::delete('reviews/{id}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
+    // Crear una reseña para un restaurante específico
+    Route::get('restaurants/{restaurant}/reviews/create', [ReviewController::class, 'create'])->name('reviews.create');
+    Route::post('restaurants/{restaurant}/reviews', [ReviewController::class, 'store'])->name('reviews.store');
+
+    // Editar, actualizar y eliminar reseñas (se usará Route Model Binding con {review})
+    Route::get('reviews/{review}/edit', [ReviewController::class, 'edit'])->name('reviews.edit');
+    Route::put('reviews/{review}', [ReviewController::class, 'update'])->name('reviews.update');
+    Route::delete('reviews/{review}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
+    
+    // Ruta para que los usuarios vean sus propias reseñas
     Route::get('my-reviews', [ReviewController::class, 'myReviews'])->name('reviews.my');
+    
+    // Rutas de administración
+    // Rutas de administración
+    Route::prefix('admin')->name('admin.')->group(function () {
+        Route::get('users', [UserController::class, 'index'])
+            ->name('users.index')
+            ->middleware('can:viewAny,App\Models\User');
+
+        Route::patch('users/{user}', [UserController::class, 'update'])
+            ->name('users.update');
+    });
 });

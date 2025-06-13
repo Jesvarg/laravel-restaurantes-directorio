@@ -17,11 +17,31 @@ class RestaurantController extends Controller
     /**
      * Mostrar todos los restaurantes.
      */
-    public function index()
+    public function index(Request $request)
     {
-        // Usar with() para cargar relaciones y evitar consultas múltiples
-        $restaurants = Restaurant::with('user', 'categories', 'photos')->get();
-        return view('restaurants.index', compact('restaurants'));
+        $query = Restaurant::with(['user', 'categories', 'photos', 'reviews']);
+
+        // Búsqueda por nombre
+        if ($request->filled('search')) {
+            $query->where('name', 'like', '%' . $request->search . '%');
+        }
+
+        // Filtro por categoría
+        if ($request->filled('category')) {
+            $query->whereHas('categories', function ($q) use ($request) {
+                $q->where('categories.id', $request->category);
+            });
+        }
+
+        $restaurants = $query->paginate(9)->withQueryString();
+        $categories = Category::orderBy('name')->get();
+
+        // Obtener los IDs de los restaurantes favoritos del usuario para evitar N+1 en la vista
+        $favoriteRestaurantIds = auth()->check() 
+            ? auth()->user()->favorites()->pluck('restaurants.id')->toArray()
+            : [];
+
+        return view('restaurants.index', compact('restaurants', 'categories', 'favoriteRestaurantIds'));
     }
 
     /**
@@ -79,76 +99,51 @@ class RestaurantController extends Controller
     /**
      * Mostrar un restaurante específico.
      */
-    public function show($id)
+    public function show(Restaurant $restaurant)
     {
-        $restaurant = Restaurant::with(['reviews.user', 'photos', 'categories', 'user'])->find($id);
-
-        if (!$restaurant) {
-            return redirect()->route('restaurants.index')
-                ->with('error', 'Restaurante no encontrado');
-        }
-
+        $restaurant->load(['reviews.user', 'photos', 'categories', 'user']);
         return view('restaurants.show', compact('restaurant'));
     }
 
     /**
      * Mostrar el formulario para editar un restaurante.
      */
-    public function edit($id)
+    public function edit(Restaurant $restaurant)
     {
-        $restaurant = Restaurant::with('categories', 'photos')->find($id);
-        
-        if (!$restaurant) {
-            return redirect()->route('restaurants.index')
-                ->with('error', 'Restaurante no encontrado');
-        }
-        
+        $this->authorize('update', $restaurant);
+
         $categories = Category::all();
-        
+        $restaurant->load('categories', 'photos');
+
         return view('restaurants.edit', compact('restaurant', 'categories'));
     }
 
     /**
      * Actualizar un restaurante.
      */
-    public function update(UpdateRestaurantRequest $request, $id)
+    public function update(UpdateRestaurantRequest $request, Restaurant $restaurant)
     {
-        $restaurant = Restaurant::find($id);
-
-        if (!$restaurant) {
-            return redirect()->route('restaurants.index')
-                ->with('error', 'Restaurante no encontrado');
-        }
+        $this->authorize('update', $restaurant);
 
         DB::beginTransaction();
         
         try {
-            // Actualizar datos básicos del restaurante
             $restaurant->update($request->validated());
             
-            // Actualizar categorías si se proporcionan
             if ($request->has('categories')) {
-                // sync reemplaza todas las categorías existentes con las nuevas
                 $restaurant->categories()->sync($request->categories);
             }
             
-            // Procesar nuevas fotos si se proporcionan
             if ($request->hasFile('photos')) {
                 foreach ($request->file('photos') as $photo) {
-                    // Guardar la imagen y obtener la URL
                     $path = $photo->store('restaurants', 'public');
                     $url = asset('storage/' . $path);
-                    
-                    // Crear la foto asociada al restaurante
-                    $restaurant->photos()->create([
-                        'url' => $url
-                    ]);
+                    $restaurant->photos()->create(['url' => $url]);
                 }
             }
             
-            // Eliminar fotos si se especifica
             if ($request->has('photos_to_delete') && is_array($request->photos_to_delete)) {
-                $restaurant->photos()->whereIn('id', $request->photos_to_delete)->delete();
+                Photo::whereIn('id', $request->photos_to_delete)->delete();
             }
             
             DB::commit();
@@ -166,24 +161,15 @@ class RestaurantController extends Controller
     /**
      * Eliminar un restaurante.
      */
-    public function destroy($id)
+    public function destroy(Restaurant $restaurant)
     {
-        $restaurant = Restaurant::find($id);
-
-        if (!$restaurant) {
-            return redirect()->route('restaurants.index')
-                ->with('error', 'Restaurante no encontrado');
-        }
+        $this->authorize('delete', $restaurant);
 
         DB::beginTransaction();
         
         try {
-            // Eliminar relaciones manualmente si es necesario
-            // (aunque las migraciones ya tienen onDelete('cascade'))
             $restaurant->categories()->detach();
             $restaurant->photos()->delete();
-            
-            // Eliminar el restaurante
             $restaurant->delete();
             
             DB::commit();
@@ -210,30 +196,15 @@ class RestaurantController extends Controller
     /**
      * Añadir un restaurante a favoritos.
      */
-    public function addToFavorites($id)
+    public function addToFavorites(Restaurant $restaurant)
     {
-        $restaurant = Restaurant::find($id);
-        
-        if (!$restaurant) {
-            return redirect()->back()->with('error', 'Restaurante no encontrado');
-        }
-        
         $user = Auth::user();
         
-        // Verificar si ya está en favoritos
-        $exists = Favorite::where('user_id', $user->id)
-            ->where('restaurant_id', $id)
-            ->exists();
-            
-        if ($exists) {
+        if ($user->favorites()->where('restaurant_id', $restaurant->id)->exists()) {
             return redirect()->back()->with('info', 'El restaurante ya está en favoritos');
         }
         
-        // Añadir a favoritos
-        Favorite::create([
-            'user_id' => $user->id,
-            'restaurant_id' => $id
-        ]);
+        $user->favorites()->attach($restaurant->id);
         
         return redirect()->back()->with('success', 'Restaurante añadido a favoritos');
     }
@@ -241,18 +212,17 @@ class RestaurantController extends Controller
     /**
      * Eliminar un restaurante de favoritos.
      */
-    public function removeFromFavorites($id)
+    public function removeFromFavorites(Request $request, Restaurant $restaurant)
     {
-        $user = Auth::user();
-        
-        $deleted = Favorite::where('user_id', $user->id)
-            ->where('restaurant_id', $id)
-            ->delete();
-            
-        if (!$deleted) {
-            return redirect()->back()->with('error', 'El restaurante no estaba en favoritos');
+        auth()->user()->favorites()->detach($restaurant->id);
+
+        if ($request->wantsJson()) {
+            return response()->json([
+                'status' => 'success',
+                'message' => 'Restaurante eliminado de favoritos.'
+            ]);
         }
-        
-        return redirect()->back()->with('success', 'Restaurante eliminado de favoritos');
+
+        return back()->with('success', 'Restaurante eliminado de favoritos.');
     }
 }

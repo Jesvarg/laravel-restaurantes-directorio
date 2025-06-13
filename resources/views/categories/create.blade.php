@@ -2,21 +2,38 @@
 @section('title', 'Crear Categoría')
 
 @section('content')
-<h2>Crear Nueva Categoría</h2>
-
-<form method="POST" action="{{ route('categories.store') }}">
-    @csrf
-    
-    <div class="mb-3">
-        <label for="name" class="form-label">Nombre</label>
-        <input type="text" name="name" id="name" class="form-control @error('name') is-invalid @enderror" 
-               value="{{ old('name') }}" required>
-        @error('name')
-            <div class="invalid-feedback">{{ $message }}</div>
-        @enderror
+<div class="container">
+    <div class="row justify-content-center">
+        <div class="col-md-8">
+            <div class="card shadow-sm">
+                <div class="card-header">
+                    <h4><i class="bi bi-plus-circle"></i> Crear Nueva Categoría</h4>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ route('categories.store') }}">
+                        @csrf
+                        
+                        <div class="mb-3">
+                            <label for="name" class="form-label">Nombre de la categoría</label>
+                            <input type="text" name="name" id="name" class="form-control @error('name') is-invalid @enderror" 
+                                   value="{{ old('name') }}" required autofocus>
+                            @error('name')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        
+                        <div class="d-flex justify-content-end">
+                            <a href="{{ route('categories.index') }}" class="btn btn-outline-secondary me-2">
+                                <i class="bi bi-x-circle"></i> Cancelar
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-circle"></i> Guardar
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
     </div>
-    
-    <button type="submit" class="btn btn-primary">Guardar</button>
-    <a href="{{ route('categories.index') }}" class="btn btn-secondary">Cancelar</a>
-</form>
+</div>
 @endsection

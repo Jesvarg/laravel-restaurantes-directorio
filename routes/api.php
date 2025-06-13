@@ -23,7 +23,7 @@ Route::post('auth/login', [AuthController::class, 'login'])->name('login');
 
 // Rutas públicas de lectura
 Route::get('restaurants', [RestaurantController::class, 'index']);
-Route::get('restaurants/{id}', [RestaurantController::class, 'show']);
+Route::get('restaurants/{restaurant}', [RestaurantController::class, 'show']);
 
 Route::get('categories', [CategoryController::class, 'index']);
 Route::get('categories/{id}', [CategoryController::class, 'show']);
@@ -47,11 +47,11 @@ Route::middleware('auth:api')->group(function () {
 
     // CRUD completo de Restaurantes
     Route::post('restaurants', [RestaurantController::class, 'store']);
-    Route::put('restaurants/{id}', [RestaurantController::class, 'update']);
-    Route::delete('restaurants/{id}', [RestaurantController::class, 'destroy']);
+    Route::put('restaurants/{restaurant}', [RestaurantController::class, 'update']);
+    Route::delete('restaurants/{restaurant}', [RestaurantController::class, 'destroy']);
     
     // Rutas para favoritos
-    Route::get('users/{userId}/favorites', [RestaurantController::class, 'getUserFavorites']);
+    Route::get('favorites', [RestaurantController::class, 'getUserFavorites']);
     Route::post('favorites', [RestaurantController::class, 'addToFavorites']);
     Route::delete('favorites', [RestaurantController::class, 'removeFromFavorites']);
 

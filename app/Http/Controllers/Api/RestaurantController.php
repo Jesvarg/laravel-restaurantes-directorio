@@ -80,13 +80,11 @@ class RestaurantController extends Controller
     /**
      * Mostrar un restaurante específico.
      */
-    public function show($id)
+    public function show(Restaurant $restaurant)
     {
-        $restaurant = Restaurant::with(['reviews.user', 'photos', 'categories', 'user'])->find($id);
-
-        if (!$restaurant) {
-            return response()->json(['message' => 'Restaurante no encontrado'], 404);
-        }
+        // El restaurante ya se carga automáticamente gracias al Route Model Binding
+        // Cargar relaciones adicionales
+        $restaurant->load(['reviews.user', 'photos', 'categories', 'user']);
 
         return response()->json($restaurant);
     }
@@ -94,48 +92,30 @@ class RestaurantController extends Controller
     /**
      * Actualizar un restaurante.
      */
-    public function update(UpdateRestaurantRequest $request, $id)
+    public function update(UpdateRestaurantRequest $request, Restaurant $restaurant)
     {
-        $restaurant = Restaurant::find($id);
-
-        if (!$restaurant) {
-            return response()->json(['message' => 'Restaurante no encontrado'], 404);
-        }
+        // Autorizar la acción usando la RestaurantPolicy
+        $this->authorize('update', $restaurant);
 
         DB::beginTransaction();
         
         try {
-            // Actualizar datos básicos del restaurante
             $restaurant->update($request->validated());
             
-            // Actualizar categorías si se proporcionan
             if ($request->has('categories')) {
-                // sync reemplaza todas las categorías existentes con las nuevas
                 $restaurant->categories()->sync($request->categories);
             }
             
-            // Procesar nuevas fotos si se proporcionan
             if ($request->hasFile('photos')) {
                 foreach ($request->file('photos') as $photo) {
-                    // Guardar la imagen y obtener la URL
                     $path = $photo->store('restaurants', 'public');
                     $url = asset('storage/' . $path);
-                    
-                    // Crear la foto asociada al restaurante
-                    $restaurant->photos()->create([
-                        'url' => $url
-                    ]);
+                    $restaurant->photos()->create(['url' => $url]);
                 }
-            }
-            
-            // Eliminar fotos si se especifica
-            if ($request->has('photos_to_delete') && is_array($request->photos_to_delete)) {
-                $restaurant->photos()->whereIn('id', $request->photos_to_delete)->delete();
             }
             
             DB::commit();
             
-            // Cargar relaciones para la respuesta
             $restaurant->load('categories', 'photos');
             
             return response()->json([
@@ -146,7 +126,7 @@ class RestaurantController extends Controller
             DB::rollBack();
             return response()->json([
                 'success' => false,
-                'message' => 'Error al actualizar.',
+                'message' => 'No se pudo actualizar.',
                 'error' => $e->getMessage()
             ], 500);
         }
@@ -155,23 +135,16 @@ class RestaurantController extends Controller
     /**
      * Eliminar un restaurante.
      */
-    public function destroy($id)
+    public function destroy(Restaurant $restaurant)
     {
-        $restaurant = Restaurant::find($id);
-
-        if (!$restaurant) {
-            return response()->json(['message' => 'Restaurante no encontrado'], 404);
-        }
+        // Autorizar la acción usando la RestaurantPolicy
+        $this->authorize('delete', $restaurant);
 
         DB::beginTransaction();
         
         try {
-            // Eliminar relaciones manualmente si es necesario
-            // (aunque las migraciones ya tienen onDelete('cascade'))
             $restaurant->categories()->detach();
             $restaurant->photos()->delete();
-            
-            // Eliminar el restaurante
             $restaurant->delete();
             
             DB::commit();
@@ -189,15 +162,10 @@ class RestaurantController extends Controller
     /**
      * Obtener los restaurantes favoritos de un usuario.
      */
-    public function getUserFavorites($userId)
+    public function getUserFavorites(Request $request)
     {
-        $user = \App\Models\User::find($userId);
-        
-        if (!$user) {
-            return response()->json(['message' => 'Usuario no encontrado'], 404);
-        }
-        
-        $favorites = $user->favorites()->with('categories', 'photos')->get();
+        // Obtener favoritos del usuario autenticado
+        $favorites = $request->user()->favorites()->with('categories', 'photos')->get();
         
         return response()->json([
             'success' => true,
@@ -211,17 +179,14 @@ class RestaurantController extends Controller
     public function addToFavorites(Request $request)
     {
         $request->validate([
-            'user_id' => 'required|exists:users,id',
             'restaurant_id' => 'required|exists:restaurants,id'
         ]);
         
+        $user = $request->user();
+        
         try {
             // Verificar si ya está en favoritos
-            $exists = \App\Models\Favorite::where('user_id', $request->user_id)
-                ->where('restaurant_id', $request->restaurant_id)
-                ->exists();
-                
-            if ($exists) {
+            if ($user->favorites()->where('restaurant_id', $request->restaurant_id)->exists()) {
                 return response()->json([
                     'success' => false,
                     'message' => 'El restaurante ya está en favoritos'
@@ -229,10 +194,7 @@ class RestaurantController extends Controller
             }
             
             // Añadir a favoritos
-            \App\Models\Favorite::create([
-                'user_id' => $request->user_id,
-                'restaurant_id' => $request->restaurant_id
-            ]);
+            $user->favorites()->attach($request->restaurant_id);
             
             return response()->json([
                 'success' => true,
@@ -253,22 +215,22 @@ class RestaurantController extends Controller
     public function removeFromFavorites(Request $request)
     {
         $request->validate([
-            'user_id' => 'required|exists:users,id',
             'restaurant_id' => 'required|exists:restaurants,id'
         ]);
         
+        $user = $request->user();
+
         try {
-            $deleted = \App\Models\Favorite::where('user_id', $request->user_id)
-                ->where('restaurant_id', $request->restaurant_id)
-                ->delete();
-                
-            if (!$deleted) {
+            // Eliminar de favoritos
+            $detached = $user->favorites()->detach($request->restaurant_id);
+
+            if (!$detached) {
                 return response()->json([
                     'success' => false,
                     'message' => 'El restaurante no estaba en favoritos'
                 ], 404);
             }
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Restaurante eliminado de favoritos'

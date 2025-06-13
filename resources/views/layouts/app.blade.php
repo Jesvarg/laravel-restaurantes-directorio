@@ -57,6 +57,14 @@
                                 <i class="bi bi-person-circle"></i> {{ Auth::user()->name }}
                             </a>
                             <ul class="dropdown-menu dropdown-menu-end">
+                                @can('viewAny', App\Models\User::class)
+                                    <li>
+                                        <a class="dropdown-item" href="{{ route('admin.users.index') }}">
+                                            <i class="bi bi-people"></i> Gestión de Usuarios
+                                        </a>
+                                    </li>
+                                    <li><hr class="dropdown-divider"></li>
+                                @endcan
                                 <li>
                                     <a class="dropdown-item" href="{{ route('restaurants.favorites') }}">
                                         <i class="bi bi-heart"></i> Mis favoritos
