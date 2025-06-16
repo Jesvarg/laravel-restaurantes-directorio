@@ -1,18 +1,83 @@
 @extends('layouts.app')
 @section('title', 'Restaurantes')
 
+@section('styles')
+<link rel="stylesheet" href="{{ asset('css/restaurants.css') }}">
+<link rel="stylesheet" href="{{ asset('css/filters.css') }}">
+@endsection
+
 @section('content')
 <div class="container">
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2><i class="bi bi-shop"></i> Restaurantes</h2>
+        <h2 class="mb-0"><i class="bi bi-shop me-2"></i>Explorar Restaurantes</h2>
         @auth
             <a href="{{ route('restaurants.create') }}" class="btn btn-primary">
-                <i class="bi bi-plus-circle"></i> Nuevo Restaurante
+                <i class="bi bi-plus-circle-fill me-1"></i> Nuevo Restaurante
             </a>
         @endauth
     </div>
 
     <!-- Filtros y búsqueda -->
+    <div class="card mb-4 filter-card">
+        <div class="card-body">
+            <form method="GET" action="{{ route('restaurants.index') }}">
+                <div class="row g-3 align-items-end">
+                    <div class="col-md-5">
+                        <label for="search" class="form-label">Buscar por nombre:</label>
+                        <input type="text" name="search" id="search" class="form-control" placeholder="Ej: La Pizzería" value="{{ request('search') }}">
+                    </div>
+                    <div class="col-md-4">
+                        <label for="category" class="form-label">Filtrar por categoría:</label>
+                        <select name="category" id="category" class="form-select">
+                            <option value="">Todas las categorías</option>
+                            @foreach($categories as $category)
+                                <option value="{{ $category->id }}" {{ request('category') == $category->id ? 'selected' : '' }}>
+                                    {{ $category->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-funnel-fill me-1"></i> Filtrar
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    @if($restaurants->isEmpty())
+        <div class="alert alert-info text-center mt-4">
+            <i class="bi bi-info-circle-fill me-2"></i> No se encontraron restaurantes con los filtros aplicados.
+            @if(request()->has('search') || request()->has('category'))
+                <a href="{{ route('restaurants.index') }}" class="alert-link">Mostrar todos los restaurantes</a>.
+            @endif
+        </div>
+    @else
+        <div class="row row-cols-1 row-cols-md-2 row-cols-lg-3 g-4 mt-3">
+            @foreach ($restaurants as $restaurant)
+                <div class="col">
+                    @include('restaurants.partials.card', ['restaurant' => $restaurant, 'favoriteRestaurantIds' => $favoriteRestaurantIds])
+                </div>
+            @endforeach
+        </div>
+    @endif
+
+    <!-- Paginación -->
+    @if ($restaurants->hasPages())
+        <div class="d-flex justify-content-center mt-5">
+            {{ $restaurants->appends(request()->query())->links() }} 
+        </div>
+    @endif
+</div>
+@endsection
+
+@section('scripts')
+<script src="{{ asset('js/restaurants.js') }}"></script>
+<script src="{{ asset('js/favorites.js') }}"></script>
+@endsection
+
     <div class="card mb-4">
         <div class="card-body">
             <form method="GET" action="{{ route('restaurants.index') }}">

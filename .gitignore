@@ -1,25 +1,70 @@
-*.log
+# General
 .DS_Store
+Thumbs.db
+
+# Log files
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Environment files
 .env
 .env.backup
 .env.production
+
+# IDEs and editors
 .phpactor.json
-.phpunit.result.cache
-/.fleet
-/.idea
-/.nova
-/.phpunit.cache
-/.vscode
-/.zed
+/.fleet/
+/.idea/
+/.nova/
+/.phpunit.cache/
+/.vscode/
+/.zed/
+
+# Composer
 /auth.json
-/node_modules
-/public/build
+/vendor/
+
+# Node
+/node_modules/
+
+# Laravel Build artifacts and public assets
+/public/build/
 /public/hot
 /public/storage
+
+# Laravel Storage & Framework files
+# The public/storage directory is a symlink to storage/app/public.
+# It's important to ignore the contents of storage/app/public directly.
+/storage/app/public/*
+!/storage/app/public/.gitignore
+
+/storage/framework/cache/data/*
+!/storage/framework/cache/data/.gitignore
+
+/storage/framework/sessions/*
+!/storage/framework/sessions/.gitignore
+
+/storage/framework/testing/*
+!/storage/framework/testing/.gitignore
+
+/storage/framework/views/*.php
+!/storage/framework/views/.gitignore
+
+/storage/logs/*.log
+!/storage/logs/.gitignore
+
 /storage/*.key
-/storage/pail
-/vendor
+/storage/pail/
+
+# Laravel Cache
+/bootstrap/cache/*.php
+!/bootstrap/cache/.gitignore
+
+# PHPUnit
+.phpunit.result.cache
+
+# Homestead
 Homestead.json
 Homestead.yaml
-Thumbs.db
-node_modules

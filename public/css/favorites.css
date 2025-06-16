@@ -1,0 +1,38 @@
+.favorite-button {
+    transition: all 0.3s ease-in-out;
+}
+
+.favorite-button .bi-heart-fill {
+    color: var(--bs-danger);
+}
+
+.favorite-button .bi-heart {
+    color: var(--bs-secondary);
+}
+
+/* Puedes añadir estilos específicos para la página de favoritos aquí si es necesario */
+/* Por ejemplo, para el mensaje de "no hay favoritos" */
+.no-favorites-message {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 300px; /* Ajusta según sea necesario */
+    text-align: center;
+}
+
+.no-favorites-message .icon {
+    font-size: 4rem;
+    color: #6c757d; /* Color secundario de Bootstrap */
+    margin-bottom: 1rem;
+}
+
+.no-favorites-message h4 {
+    color: #495057; /* Un gris un poco más oscuro */
+}
+
+.no-favorites-message p {
+    color: #6c757d;
+    max-width: 400px;
+    margin-bottom: 1.5rem;
+}

@@ -1,0 +1,88 @@
+.category-card {
+    transition: transform 0.3s ease-in-out, box-shadow 0.3s ease-in-out;
+    border: none; /* Quitar borde por defecto si se usa shadow */
+    background-color: #fff; /* Asegurar fondo blanco para la tarjeta */
+}
+
+.category-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 0.5rem 1.2rem rgba(0, 0, 0, 0.1) !important; /* Sombra más suave y elevada */
+}
+
+.category-card .card-body {
+    padding: 1.25rem; /* Espaciado interno consistente */
+}
+
+.category-card .card-title {
+    font-weight: 600;
+    color: var(--bs-primary); /* Usar color primario para el título */
+    margin-bottom: 0.5rem;
+    font-size: 1.15rem; /* Ligeramente más grande */
+}
+
+.category-card .card-text .badge {
+    font-size: 0.8rem; /* Ajustar tamaño de la fuente del badge */
+    padding: 0.4em 0.7em;
+    font-weight: 500;
+    vertical-align: middle;
+}
+
+.category-card .btn {
+    font-size: 0.875rem; /* Tamaño de fuente para botones */
+    padding: 0.375rem 0.75rem; /* Padding para botones */
+}
+
+.category-card .btn-outline-primary {
+    border-color: var(--bs-primary);
+    color: var(--bs-primary);
+}
+
+.category-card .btn-outline-primary:hover,
+.category-card .btn-outline-primary:focus {
+    background-color: var(--bs-primary);
+    color: white;
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-primary-rgb), 0.25); /* Sombra de foco */
+}
+
+.category-card .btn-outline-warning {
+    border-color: var(--bs-warning);
+    color: var(--bs-warning);
+}
+
+.category-card .btn-outline-warning:hover,
+.category-card .btn-outline-warning:focus {
+    background-color: var(--bs-warning);
+    color: #212529; /* Texto oscuro para contraste con warning */
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-warning-rgb), 0.25);
+}
+
+.category-card .btn-outline-danger {
+    border-color: var(--bs-danger);
+    color: var(--bs-danger);
+}
+
+.category-card .btn-outline-danger:hover,
+.category-card .btn-outline-danger:focus {
+    background-color: var(--bs-danger);
+    color: white;
+    box-shadow: 0 0 0 0.2rem rgba(var(--bs-danger-rgb), 0.25);
+}
+
+/* Estilos para el mensaje de "no hay categorías" */
+.alert-light.text-center.border-0.shadow-sm {
+    background-color: #f8f9fa; /* Un fondo muy claro */
+    border-radius: 0.375rem; /* Bordes redondeados consistentes */
+}
+
+.alert-light .bi-tags {
+    color: var(--bs-secondary); /* Color del icono */
+}
+
+.alert-light h4 {
+    color: var(--bs-dark); /* Color del título del mensaje */
+}
+
+.alert-light .alert-link {
+    color: var(--bs-primary);
+    font-weight: 500;
+}
