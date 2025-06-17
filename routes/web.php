@@ -80,24 +80,3 @@ Route::middleware('auth')->group(function () {
         Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     });
 });
-
-Route::get('users/create', [UserController::class, 'create'])
-    ->name('users.create')
-    ->middleware('can:create,App\Models\User');
-    
-Route::post('users', [UserController::class, 'store'])
-    ->name('users.store')
-    ->middleware('can:create,App\Models\User');
-    
-Route::get('users/{user}', [UserController::class, 'show'])
-    ->name('users.show')
-    ->middleware('can:view,user');
-    
-Route::get('users/{user}/edit', [UserController::class, 'edit'])
-    ->name('users.edit')
-    ->middleware('can:update,user');
-    
-Route::delete('users/{user}', [UserController::class, 'destroy'])
-    ->name('users.destroy')
-    ->middleware('can:delete,user');
-});
