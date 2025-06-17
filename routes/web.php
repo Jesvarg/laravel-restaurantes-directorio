@@ -6,6 +6,8 @@ use App\Http\Controllers\RestaurantController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\ReviewController;
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\PhotoController;
 
 // Página principal
 Route::get('/', [HomeController::class, 'index'])->name('home');
@@ -28,6 +30,10 @@ Route::get('categories', [CategoryController::class, 'index'])->name('categories
 Route::get('categories/{category}', [CategoryController::class, 'show'])->name('categories.show');
 Route::get('categories/{id}/restaurants', [CategoryController::class, 'restaurants'])->name('categories.restaurants');
 
+// Rutas públicas de reseñas
+Route::get('reviews', [ReviewController::class, 'index'])->name('reviews.index');
+Route::get('reviews/{review}', [ReviewController::class, 'show'])->name('reviews.show');
+
 // Rutas protegidas (requieren autenticación)
 Route::middleware('auth')->group(function () {
     // Restaurantes
@@ -42,6 +48,10 @@ Route::middleware('auth')->group(function () {
     Route::post('restaurants/{restaurant}/favorite', [RestaurantController::class, 'addToFavorites'])->name('restaurants.favorite');
     Route::delete('restaurants/{restaurant}/favorite', [RestaurantController::class, 'removeFromFavorites'])->name('restaurants.unfavorite');
     
+    // Fotos
+    Route::post('photos', [PhotoController::class, 'store'])->name('photos.store');
+    Route::delete('photos/{photo}', [PhotoController::class, 'destroy'])->name('photos.destroy');
+    
     // Categorías (solo para administradores)
     Route::middleware('admin')->group(function () {
         Route::get('categories/create', [CategoryController::class, 'create'])->name('categories.create');
@@ -52,26 +62,42 @@ Route::middleware('auth')->group(function () {
     });
     
     // Reseñas
-    // Crear una reseña para un restaurante específico
     Route::get('restaurants/{restaurant}/reviews/create', [ReviewController::class, 'create'])->name('reviews.create');
     Route::post('restaurants/{restaurant}/reviews', [ReviewController::class, 'store'])->name('reviews.store');
-
-    // Editar, actualizar y eliminar reseñas (se usará Route Model Binding con {review})
     Route::get('reviews/{review}/edit', [ReviewController::class, 'edit'])->name('reviews.edit');
     Route::put('reviews/{review}', [ReviewController::class, 'update'])->name('reviews.update');
     Route::delete('reviews/{review}', [ReviewController::class, 'destroy'])->name('reviews.destroy');
-    
-    // Ruta para que los usuarios vean sus propias reseñas
     Route::get('my-reviews', [ReviewController::class, 'myReviews'])->name('reviews.my');
     
     // Rutas de administración
-    // Rutas de administración
-    Route::prefix('admin')->name('admin.')->group(function () {
-        Route::get('users', [UserController::class, 'index'])
-            ->name('users.index')
-            ->middleware('can:viewAny,App\Models\User');
-
-        Route::patch('users/{user}', [UserController::class, 'update'])
-            ->name('users.update');
+    Route::prefix('admin')->name('admin.')->middleware('admin')->group(function () {
+        Route::get('users', [UserController::class, 'index'])->name('users.index');
+        Route::get('users/create', [UserController::class, 'create'])->name('users.create');
+        Route::post('users', [UserController::class, 'store'])->name('users.store');
+        Route::get('users/{user}', [UserController::class, 'show'])->name('users.show');
+        Route::get('users/{user}/edit', [UserController::class, 'edit'])->name('users.edit');
+        Route::patch('users/{user}', [UserController::class, 'update'])->name('users.update');
+        Route::delete('users/{user}', [UserController::class, 'destroy'])->name('users.destroy');
     });
+});
+
+Route::get('users/create', [UserController::class, 'create'])
+    ->name('users.create')
+    ->middleware('can:create,App\Models\User');
+    
+Route::post('users', [UserController::class, 'store'])
+    ->name('users.store')
+    ->middleware('can:create,App\Models\User');
+    
+Route::get('users/{user}', [UserController::class, 'show'])
+    ->name('users.show')
+    ->middleware('can:view,user');
+    
+Route::get('users/{user}/edit', [UserController::class, 'edit'])
+    ->name('users.edit')
+    ->middleware('can:update,user');
+    
+Route::delete('users/{user}', [UserController::class, 'destroy'])
+    ->name('users.destroy')
+    ->middleware('can:delete,user');
 });
