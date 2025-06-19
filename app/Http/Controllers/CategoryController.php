@@ -105,4 +105,23 @@ class CategoryController extends Controller
             return back()->with('error', 'Error al eliminar la categoría: ' . $e->getMessage());
         }
     }
+    
+    /**
+     * Mostrar restaurantes de una categoría específica.
+     */
+    public function restaurants(Category $category)
+    {
+        $restaurants = $category->restaurants()
+            ->with(['reviews', 'photos', 'categories'])
+            ->withCount('reviews')
+            ->withAvg('reviews', 'rating')
+            ->paginate(12);
+            
+        $favoriteRestaurantIds = [];
+        if (auth()->check()) {
+            $favoriteRestaurantIds = auth()->user()->favoriteRestaurants()->pluck('restaurant_id')->toArray();
+        }
+        
+        return view('categories.restaurants', compact('category', 'restaurants', 'favoriteRestaurantIds'));
+    }
 }

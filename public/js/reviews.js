@@ -3,7 +3,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     deleteReviewForms.forEach(form => {
         form.addEventListener('submit', function (event) {
-            event.preventDefault(); // Prevenir el envío del formulario por defecto
+            event.preventDefault(); 
 
             Swal.fire({
                 title: '¿Estás seguro?',
@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', function () {
                 cancelButtonText: 'Cancelar'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    form.submit(); // Enviar el formulario si el usuario confirma
+                    form.submit(); 
                 }
             });
         });
