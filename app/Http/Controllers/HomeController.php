@@ -1,10 +1,10 @@
 <?php
-
 namespace App\Http\Controllers;
 
 use App\Models\Restaurant;
 use App\Models\Category;
 use App\Models\Review;
+use App\Models\User;
 use Illuminate\Http\Request;
 
 class HomeController extends Controller
@@ -29,13 +29,14 @@ class HomeController extends Controller
             ->take(6)
             ->get();
             
-        // Estadísticas
+        // Estadísticas generales
         $stats = [
             'restaurants' => Restaurant::count(),
-            'reviews' => Review::count(),
             'categories' => Category::count(),
+            'reviews' => Review::count(),
+            'users' => User::count()
         ];
         
-        return view('welcome', compact('restaurants', 'categories', 'stats'));
+        return view('home', compact('restaurants', 'categories', 'stats'));
     }
 }
