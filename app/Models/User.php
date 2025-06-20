@@ -52,6 +52,11 @@ class User extends Authenticatable
         return $this->belongsToMany(Restaurant::class, 'favorites');
     }
 
+	 public function favoriteRestaurants()
+    {
+        return $this->favorites();
+    }
+
     // Accessor: Capitalizar nombre
     public function getNameAttribute($value)
     {

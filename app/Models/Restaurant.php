@@ -55,4 +55,8 @@ class Restaurant extends Model
     {
         return ucwords($value);
     }
+	public function averageRating()
+    {
+        return $this->reviews()->avg('rating') ?? 0;
+    }
 }
