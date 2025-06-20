@@ -126,10 +126,3 @@ class CategoryController extends Controller
     }
 }
 
-public function restaurants($id)
-{
-    $category = Category::findOrFail($id);
-    $restaurants = $category->restaurants()->paginate(12);
-    
-    return view('categories.restaurants', compact('category', 'restaurants'));
-}

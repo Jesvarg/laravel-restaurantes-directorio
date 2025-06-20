@@ -71,7 +71,6 @@
         </div>
     @endif
 </div>
-@endsection
 
 @section('scripts')
 <script src="{{ asset('js/restaurants.js') }}"></script>
