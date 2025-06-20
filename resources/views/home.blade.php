@@ -24,6 +24,8 @@
     </div>
 </div>
 
+{{-- --- REACTIVANDO LAS SECCIONES --}}
+
 <!-- Featured Restaurants -->
 <section class="mb-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
@@ -95,7 +97,7 @@
 <section class="mb-5">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2>Explora por categorías</h2>
-        <a href="{{ route('categories.index') }}" class="btn btn-outline-primary">Ver todas</a>
+        <a href="{{ route('categories.index') }}" class="btn btn-outline-primary">Ver todos</a>
     </div>
     
     <div class="row">

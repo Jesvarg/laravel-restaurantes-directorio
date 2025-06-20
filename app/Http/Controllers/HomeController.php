@@ -14,6 +14,8 @@ class HomeController extends Controller
      */
     public function index()
     {
+        // --- REACTIVANDO LA LÓGICA ORIGINAL ---
+        
         // Obtener restaurantes destacados (los mejor valorados)
         $restaurants = Restaurant::with(['reviews', 'categories', 'photos'])
             ->withCount('reviews')
@@ -38,5 +40,7 @@ class HomeController extends Controller
         ];
         
         return view('home', compact('restaurants', 'categories', 'stats'));
+        
+        // return view('home'); // Ya no necesitamos la versión simplificada
     }
 }
